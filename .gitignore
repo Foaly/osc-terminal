@@ -1,0 +1,5 @@
+# don't safe logs
+logs/
+
+# pycharm
+.idea/
