@@ -84,10 +84,9 @@ CHAR_MAP = {
     "P": 16, "Q": 17, "R": 18, "S": 19, "T": 20,
     "U": 21, "V": 22, "W": 23, "X": 24, "Y": 25,
     "Z": 26,
-    "0": 27, "1": 28, "2": 29, "3": 30, "4": 31,
-    "5": 32, "6": 33, "7": 34, "8": 35, "9": 36,
-    ".": 38, ",": 39, "!": 40, "?": 41,
-    "-": 42, ":": 43,
+    "Ü": 27,
+    ".": 28, ",": 29, "!": 30, "?": 31,
+    "-": 32, ":": 33
 }
 ALLOWED = set(CHAR_MAP.keys())
 OSC_PATH = "/letter"
@@ -139,7 +138,7 @@ class CRTTerminal:
         pygame.init()
         flags = pygame.FULLSCREEN if FULLSCREEN else 0
         self.screen = pygame.display.set_mode((SCREEN_W, SCREEN_H), flags)
-        pygame.display.set_caption("OSC CRT TERMINAL")
+        pygame.display.set_caption("LAZOR LIGHT COMMUNICATOR V3.7.1")
         self.clock = pygame.time.Clock()
 
         self.font = self._load_font()
