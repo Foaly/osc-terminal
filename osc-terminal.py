@@ -91,6 +91,7 @@ CHAR_MAP = {
 ALLOWED = set(CHAR_MAP.keys())
 OSC_PATH = "/letter"
 OSC_DELAY = 0.7
+OSC_MAX_GLYPH_INDEX = 127  # sent once on launch — sentinel glyph index in MadMapper
 
 # --- Logging ---
 SCRIPT_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
@@ -136,7 +137,8 @@ class MessageLogger:
 class CRTTerminal:
     def __init__(self, ip, port, delay):
         pygame.init()
-        flags = pygame.FULLSCREEN if FULLSCREEN else 0
+        self.fullscreen = FULLSCREEN
+        flags = pygame.FULLSCREEN if self.fullscreen else 0
         self.screen = pygame.display.set_mode((SCREEN_W, SCREEN_H), flags)
         pygame.display.set_caption("LAZOR LIGHT COMMUNICATOR V3.7.1")
         self.clock = pygame.time.Clock()
@@ -184,6 +186,7 @@ class CRTTerminal:
 
         # OSC
         self.osc = udp_client.SimpleUDPClient(ip, port)
+        self.osc.send_message(OSC_PATH, OSC_MAX_GLYPH_INDEX)
         self.osc_delay = delay
 
         self.logger = MessageLogger()
@@ -218,6 +221,11 @@ class CRTTerminal:
 
     def _calc_header_zone(self):
         self.header_zone_h = MARGIN_Y + len(self.header_lines) * self.line_h + self.line_h // 2
+
+    def _toggle_fullscreen(self):
+        self.fullscreen = not self.fullscreen
+        flags = pygame.FULLSCREEN if self.fullscreen else 0
+        self.screen = pygame.display.set_mode((SCREEN_W, SCREEN_H), flags)
 
     # --- text wrapping ---
 
@@ -317,6 +325,13 @@ class CRTTerminal:
     # --- input handling ---
 
     def _handle_key(self, event):
+        # Cmd/Ctrl + Shift + F → toggle fullscreen (works in any state).
+        # Cmd on macOS, Ctrl on Windows/Linux.
+        if event.key == pygame.K_f:
+            plat_mod = pygame.KMOD_META if sys.platform == "darwin" else pygame.KMOD_CTRL
+            if (event.mod & plat_mod) and (event.mod & pygame.KMOD_SHIFT):
+                self._toggle_fullscreen()
+                return
         if self.state != "ready":
             return
         if event.key == pygame.K_RETURN:
