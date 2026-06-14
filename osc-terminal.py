@@ -92,6 +92,7 @@ ALLOWED = set(CHAR_MAP.keys())
 OSC_PATH = "/letter"
 OSC_DELAY = 0.7
 OSC_MAX_GLYPH_INDEX = 127  # sent once on launch — sentinel glyph index in MadMapper
+LOOP_PAUSE = 1.0           # empty gap (s) between repeat transmissions of the last message
 
 # --- Logging ---
 SCRIPT_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
@@ -182,7 +183,11 @@ class CRTTerminal:
         # Transmission status
         self.tx_status = ""
         self.tx_line = None
-        self.tx_busy = False
+        # Loop control: stop_event tells the running loop thread to exit; the
+        # generation counter lets it know whether it's still the "current" loop
+        # (so a stale thread can't overwrite tx_status / tx_line of its successor).
+        self.loop_stop_event = None
+        self.loop_generation = 0
 
         # OSC
         self.osc = udp_client.SimpleUDPClient(ip, port)
@@ -370,8 +375,6 @@ class CRTTerminal:
             self.input_buf = ""
 
     def _submit(self):
-        if self.tx_busy:
-            return
         text = self.input_buf.strip()
         self.input_buf = ""
         self.history_idx = -1
@@ -386,28 +389,62 @@ class CRTTerminal:
         self.input_history.append(text)
         self.logger.log(text)
 
-        line = self._add_msg_line(f"> {text}", osc_sync=True)
-        line["reveal"] = 2
-        self.tx_line = line
-        threading.Thread(target=self._send_osc, args=(text,), daemon=True).start()
-
-    def _send_osc(self, text):
-        seq = text + " "
-        self.tx_busy = True
-        self.tx_status = "TRANSMITTING..."
-        for ch in seq:
-            self.osc.send_message(OSC_PATH, CHAR_MAP[ch])
-            if self.tx_line and self.tx_line["reveal"] < len(self.tx_line["text"]):
-                self.tx_line["reveal"] += 1
-            time.sleep(self.osc_delay)
+        # Stop any currently-looping transmission and lock its line into history.
+        if self.loop_stop_event:
+            self.loop_stop_event.set()
         if self.tx_line:
             self.tx_line["reveal"] = len(self.tx_line["text"])
             self.tx_line["done"] = True
-            self.tx_line = None
-        self.tx_status = "TRANSMITTED."
-        time.sleep(1.0)
-        self.tx_status = ""
-        self.tx_busy = False
+            self.tx_line["osc_sync"] = False
+
+        line = self._add_msg_line(f"> {text}", osc_sync=True)
+        line["reveal"] = 2
+        self.tx_line = line
+        self.tx_status = "TRANSMITTING..."
+
+        self.loop_generation += 1
+        self.loop_stop_event = threading.Event()
+        threading.Thread(
+            target=self._loop_osc,
+            args=(text, self.loop_generation, self.loop_stop_event),
+            daemon=True,
+        ).start()
+
+    def _loop_osc(self, text, my_gen, stop_event):
+        """Send the message via OSC, then loop with LOOP_PAUSE gaps until stopped.
+        Every iteration restarts the typewriter reveal so the visible line
+        re-runs in sync with each OSC send — highlights which letter is
+        currently being transmitted, both on the first pass and on every loop.
+        """
+        seq = text + " "  # trailing space (CHAR_MAP[" "] = 0) clears the receiver between loops
+        first_pass = True
+        while not stop_event.is_set():
+            if my_gen == self.loop_generation and self.tx_line:
+                self.tx_line["reveal"] = 2  # back to just "> "
+                self.tx_line["done"] = False
+
+            for ch in seq:
+                if stop_event.is_set():
+                    return
+                self.osc.send_message(OSC_PATH, CHAR_MAP[ch])
+                if (my_gen == self.loop_generation
+                        and self.tx_line
+                        and self.tx_line["reveal"] < len(self.tx_line["text"])):
+                    self.tx_line["reveal"] += 1
+                if stop_event.wait(self.osc_delay):
+                    return
+
+            if my_gen == self.loop_generation and self.tx_line:
+                self.tx_line["reveal"] = len(self.tx_line["text"])
+                self.tx_line["done"] = True
+
+            if first_pass:
+                first_pass = False
+                if my_gen == self.loop_generation:
+                    self.tx_status = "LOOPING..."
+
+            if stop_event.wait(LOOP_PAUSE):
+                return
 
     # --- layout helpers ---
 
