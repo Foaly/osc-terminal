@@ -27,10 +27,10 @@ from pythonosc import udp_client
 # CONFIGURATION – tweak to taste, especially for Pi / monitor
 # ============================================================
 
-SCREEN_W, SCREEN_H = 800, 600
+SCREEN_W, SCREEN_H = 1280, 1024
 FULLSCREEN = False
 FPS = 30
-FONT_SIZE = 18
+FONT_SIZE = 20
 LINE_SPACING = 6
 MARGIN_X, MARGIN_Y = 24, 20
 
@@ -50,7 +50,7 @@ GLOW_ALPHA = 20
 FLICKER = True
 FLICKER_RANGE = 12
 
-VIGNETTE = True
+VIGNETTE = False
 VIGNETTE_STR = 0.75
 
 # --- Typewriter ---
@@ -64,11 +64,11 @@ MAX_MESSAGES = 23
 
 # --- Boot sequence: (line_text, pause_after_complete_ms) ---
 BOOT_SEQ = [
-    ("LAZOR LIGHT COMMUNICATOR V3.7.1", 500),
-    ("(C) 1967 KREKTECH SYSTEMS", 1000),
+    ("LAZOR LIGHT COMMUNICATOR V5.1.2", 500),
+    ("(C) 1984 KREKTECH SYSTEMS", 1000),
     ("MEMORY TEST... 64K  OK", 350),
     ("LOADING TERMINAL DRIVER...  OK", 250),
-    ("INIT SUBSYSTEMS...", 700),
+    ("INIT SUBSYSTEMS...   OK", 700),
     ("LINK ACTIVE!", 250),
     ("", 150),
     ("ENTER MESSAGE. PRESS RETURN TO TRANSMIT.", 300),
