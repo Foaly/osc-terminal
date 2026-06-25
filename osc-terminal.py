@@ -59,6 +59,9 @@ TYPE_MS = 30
 # --- Cursor ---
 CURSOR_BLINK_MS = 500
 
+# --- Mouse auto-hide ---
+MOUSE_HIDE_MS = 2000  # idle time before the mouse cursor auto-hides
+
 # --- Message history cap ---
 MAX_MESSAGES = 23
 
@@ -187,6 +190,10 @@ class CRTTerminal:
         # (so a stale thread can't overwrite tx_status / tx_line of its successor).
         self.loop_stop_event = None
         self.loop_generation = 0
+
+        # Mouse auto-hide
+        self.mouse_visible = True
+        self.last_mouse_move = pygame.time.get_ticks()
 
         # OSC
         self.osc = udp_client.SimpleUDPClient(ip, port)
@@ -563,6 +570,16 @@ class CRTTerminal:
                     self.running = False
                 elif ev.type == pygame.KEYDOWN:
                     self._handle_key(ev)
+                elif ev.type == pygame.MOUSEMOTION:
+                    self.last_mouse_move = now
+                    if not self.mouse_visible:
+                        pygame.mouse.set_visible(True)
+                        self.mouse_visible = True
+
+            # Hide the cursor after MOUSE_HIDE_MS of mouse idleness
+            if self.mouse_visible and now - self.last_mouse_move > MOUSE_HIDE_MS:
+                pygame.mouse.set_visible(False)
+                self.mouse_visible = False
 
             if self.state == "boot":
                 self._tick_boot(now)
