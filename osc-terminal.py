@@ -350,7 +350,9 @@ class CRTTerminal:
         elif event.key == pygame.K_BACKSPACE:
             self.input_buf = self.input_buf[:-1]
         elif event.key == pygame.K_ESCAPE:
-            self.running = False
+            plat_mod = pygame.KMOD_META if sys.platform == "darwin" else pygame.KMOD_CTRL
+            if (event.mod & plat_mod) and (event.mod & pygame.KMOD_SHIFT):
+                self.running = False
         elif event.key == pygame.K_UP:
             self._history_prev()
         elif event.key == pygame.K_DOWN:
