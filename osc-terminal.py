@@ -71,7 +71,7 @@ BOOT_SEQ = [
     ("INIT SUBSYSTEMS...   OK", 700),
     ("LINK ACTIVE!", 250),
     ("", 150),
-    ("ENTER MESSAGE. PRESS RETURN TO TRANSMIT.", 300),
+    ("SEND A MESSAGE TO THE ALIENS. PRESS RETURN TO TRANSMIT.", 300),
     ("", 100),
 ]
 
@@ -89,7 +89,7 @@ CHAR_MAP = {
 }
 ALLOWED = set(CHAR_MAP.keys())
 OSC_PATH = "/letter"
-OSC_DELAY = 0.7
+OSC_DELAY = 1.0
 OSC_MAX_GLYPH_INDEX = 127  # sent once on launch — sentinel glyph index in MadMapper
 LOOP_PAUSE = 1.0           # empty gap (s) between repeat transmissions of the last message
 
